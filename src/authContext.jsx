@@ -16,6 +16,10 @@ const reducer = (state, action) => {
       //TODO
       return {
         ...state,
+        isAuthenticated: true,
+        user: action.payload.user,
+        token: action.payload.token,
+        role: action.payload.role,
       };
     case "LOGOUT":
       localStorage.clear();
@@ -46,6 +50,40 @@ const AuthProvider = ({ children }) => {
 
   React.useEffect(() => {
     //TODO
+    const checkAuthentication = async () => {
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+      if (token && role) {
+        try {
+          const parts = token.split(".");
+          if (parts.length !== 3) {
+            throw new Error("Invalid token format");
+          }
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.exp) {
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            if (payload.exp < currentTimestamp) {
+              dispatch({ type: "LOGOUT" });
+              return;
+            }
+          }
+          const user = null; 
+          dispatch({
+            type: "LOGIN",
+            payload: {
+              user,
+              token,
+              role,
+            },
+          });
+        } catch (error) {
+          console.error("Error during token validation:", error);
+        }
+      }
+    };
+
+
+    checkAuthentication();
   }, []);
 
   return (
